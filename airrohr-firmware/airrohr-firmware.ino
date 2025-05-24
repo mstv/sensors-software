@@ -5657,9 +5657,13 @@ static void powerOnTestSensors()
 	if (cfg::bmx280_read)
 	{
 		debug_outln_info(F("Read BMx280..."));
-		if (!initBMX280(bmx280_default_i2c_address) && !initBMX280(bmx280_alternate_i2c_address)) {
+		if (!initBMX280(bmx280_default_i2c_address)) {
 			debug_outln_error(F("Check BMx280 wiring"));
 			bmx280_init_failed = true;
+		}
+		if (!initBMX280x(bmx280_alternate_i2c_address)) {
+			debug_outln_error(F("Check second BMx280 wiring"));
+			bmx280x_init_failed = true;
 		}
 	}
 
@@ -6201,6 +6205,11 @@ void loop(void)
 				sum_send_time += sendSensorCommunity(result, BMP280_API_PIN, FPSTR(SENSORS_BMP280), "BMP280_");
 			}
 			result = emptyString;
+		}
+		if (cfg::bmx280_read && (!bmx280x_init_failed))
+		{
+			// getting second sensor's temperature, humidity and pressure (optional)
+			fetchSensorBMX280x();
 		}
 		if (cfg::sht3x_read && (!sht3x_init_failed))
 		{
