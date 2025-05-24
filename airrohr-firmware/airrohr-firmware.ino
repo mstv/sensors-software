@@ -664,6 +664,8 @@ IPAddress addr_static_dns;
 const char data_first_part[] PROGMEM = "{\"software_version\": \"" SOFTWARE_VERSION_STR "\", \"sensordatavalues\":[";
 const char JSON_SENSOR_DATA_VALUES[] PROGMEM = "sensordatavalues";
 
+#include "extensions.h"
+
 /*****************************************************************
  * display values                                                *
  *****************************************************************/
@@ -2726,6 +2728,7 @@ static void setup_webserver()
 	server.on(F("/removeConfig"), webserver_removeConfig);
 	server.on(F("/reset"), webserver_reset);
 	server.on(F("/data.json"), webserver_data_json);
+	server.on(F("/xdata.json"), webserver_xdata_json);
 	server.on(F("/metrics"), webserver_metrics_endpoint);
 	server.on(F("/favicon.ico"), webserver_favicon);
 	server.on(F(STATIC_PREFIX), webserver_static);
