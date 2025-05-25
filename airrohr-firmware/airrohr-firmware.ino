@@ -6116,7 +6116,7 @@ void loop(void)
 	if ((msSince(last_display_millis) > DISPLAY_UPDATE_INTERVAL_MS) &&
 		(cfg::has_display || cfg::has_sh1106 || lcd_1602 || lcd_2004))
 	{
-		display_values();
+		display_xvalues();
 		last_display_millis = act_milli;
 	}
 

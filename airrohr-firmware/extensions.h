@@ -6,11 +6,24 @@ static String dew_point_string(const float temperature, const float humidity)
 	return isnan(dew_point_temp) ? "-" : String(dew_point_temp, 1);
 }
 
+// second sensor
 BMX280 bmx280x;
 bool bmx280x_init_failed = false;
 float last_value_BMX280x_T = -128.0;
 float last_value_BMX280x_P = -1.0;
 float last_value_BME280x_H = -1.0;
+
+// values from remote sensor (outside, inside)
+unsigned long count_measurements_r = 0;
+int last_signal_strength_r = 0;
+float last_value_BMX280_T_r = -128.0;
+float last_value_BMX280_P_r = -1.0;
+float last_value_BME280_H_r = -1.0;
+float last_value_BMX280x_T_r = -128.0;
+float last_value_BMX280x_P_r = -1.0;
+float last_value_BME280x_H_r = -1.0;
+float last_value_SDS_P1_r = -1.0;
+float last_value_SDS_P2_r = -1.0;
 
 /*****************************************************************
  * Init second BMP280/BME280                                     *
@@ -97,10 +110,133 @@ static void webserver_xdata_json()
 		add_Value2Json(xdata, F("BME280x_pressure"), FPSTR(DBG_TXT_PRESSURE), last_value_BMX280x_P);
 		add_Value2Json(xdata, F("BME280x_humidity"), FPSTR(DBG_TXT_HUMIDITY), last_value_BME280x_H);
 		add_Value2Json(xdata, F("BME280x_dew_point"), dew_point_string(last_value_BMX280x_T, last_value_BME280x_H));
+		add_Value2Json(xdata, F("count_measurements"), String(count_sends));
 		json.replace(JSON_INSERT_XDATA_BEFORE_ENTRY, xdata + JSON_INSERT_XDATA_BEFORE_ENTRY);
 	}
 
 	json.replace(F("[{"), F("[\n{"));
 	json.replace(F("},"), F("},\n"));
 	server.send(200, FPSTR(TXT_CONTENT_TYPE_JSON), json);
+}
+
+/*****************************************************************
+ * taylored display (lcd_2004)                                   *
+ *****************************************************************/
+static void append(String& line, const String& value, unsigned int minWidth)
+{
+	for (int spaces = minWidth - value.length(); spaces > 0; --spaces)
+	{
+		line += ' ';
+	}
+	line += value;
+}
+
+static void append(String& line, float value, float minValue, unsigned int minWidth, unsigned char decimalPlaces)
+{
+	String text = isnan(value) || value <= minValue ? F("-") : String(value, decimalPlaces);
+	append(line, text, minWidth);
+}
+
+static void append(String& line, unsigned long count)
+{
+	if (count < 1000)
+	{
+		append(line, String(count), 5);
+	}
+	else if (count < 1000 * 1000)
+	{
+		append(line, String((count + 500) / 1000), 4);
+		line += 'k';
+	}
+	else if (count < 1000 * 1000 * 1000)
+	{
+		append(line, String((count + 500 * 1000) / (1000 * 1000)), 4);
+		line += 'M';
+	}
+	else
+	{
+		append(line, String((count + 500 * 1000 * 1000) / (1000 * 1000 * 1000)), 4);
+		line += 'G';
+	}
+}
+
+static void display_xvalues()
+{
+	#if 0 // TODO: just for display test
+ 	count_measurements_r = count_sends + 998;
+	last_signal_strength_r = last_signal_strength;
+	last_value_BMX280_T = 22;
+	last_value_BMX280_P = 1000 * 100;
+	last_value_BME280_H = 60;
+	last_value_BMX280_T_r = -10;
+	last_value_BMX280_P_r = 1001 * 100;
+	last_value_BME280_H_r = 80;
+	last_value_BMX280x_T_r = 0.1;
+	last_value_BMX280x_P_r = 1002 * 100;
+	last_value_BME280x_H_r = 100;
+	last_value_SDS_P2_r = 2;
+	last_value_SDS_P1_r = 7;
+	#endif
+
+	/*
+		    this remote xremote
+		12345678901234567890
+		--------------------
+		°C -10.0 -10.0 -10.0
+		H % 60.0  80.0   100
+		hPA 1000  1000  1000
+		14°C 25/30µ 999k 30%
+		--------------------
+		Dew  PM of  |    WiFi of remote
+		this remote |#measurements of remote
+		     2.5/10µ
+		     µg/m³
+	*/
+	float temperature[3] = { last_value_BMX280_T, last_value_BMX280_T_r, last_value_BMX280x_T_r };
+	float pressure   [3] = { last_value_BMX280_P, last_value_BMX280_P_r, last_value_BMX280x_P_r };
+	float humidity   [3] = { last_value_BME280_H, last_value_BME280_H_r, last_value_BME280x_H_r };
+
+	String centiDegrees(char(223));
+	centiDegrees += 'C';
+	String line0 = centiDegrees;
+	String line1 = F("H %");
+	String line2 = F("hPa");
+	String line3;
+	for (int i = 0; i < 3; ++i)
+	{
+		append(line0, temperature[i], -128, 6, 1);
+		append(line1, humidity[i], -1, i == 0 ? 5 : 6, humidity[i] >= 99.5 ? 0 : 1);
+		append(line2, pressure[i] * 0.01f, -0.01f, i == 0 ? 5 : 6, 0);
+	}
+	append(line3, dew_point(last_value_BMX280_T, last_value_BME280_H), -128, 2, 0);
+	line3 += centiDegrees;
+	append(line3, last_value_SDS_P2_r, -1, 3, 0);
+	line3 += '/';
+	append(line3, last_value_SDS_P1_r, -1, 2, 0);
+	line3 += 'u';
+	append(line3, count_measurements_r);
+	line3 += ' ';
+	append(line3, String(calcWiFiSignalQuality(last_signal_strength_r)), 2);
+	line3 += '%';
+
+	if (lcd_2004)
+	{
+		lcd_2004->setCursor(0, 0);
+		lcd_2004->print(line0);
+		lcd_2004->setCursor(0, 1);
+		lcd_2004->print(line1);
+		lcd_2004->setCursor(0, 2);
+		lcd_2004->print(line2);
+		lcd_2004->setCursor(0, 3);
+		lcd_2004->print(line3);
+	}
+
+	#if 0 // output to serial, too
+	debug_outln_info(line0);
+	debug_outln_info(line1);
+	debug_outln_info(line2);
+	debug_outln_info(line3);
+	#endif
+
+	yield();
 }
