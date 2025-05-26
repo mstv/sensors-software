@@ -82,10 +82,8 @@ const String JSON_INSERT_XDATA_BEFORE_ENTRY = "{\"value_type\":\"samples\"";
 /*****************************************************************
  * Webserver xdata.json                                          *
  *****************************************************************/
-static void webserver_xdata_json()
+static String get_xdata_json()
 {
-	debug_outln_info(F("ws: xdata.json..."));
-
 	RESERVE_STRING(json, XLARGE_STR);
 
 	{
@@ -116,7 +114,13 @@ static void webserver_xdata_json()
 
 	json.replace(F("[{"), F("[\n{"));
 	json.replace(F("},"), F("},\n"));
-	server.send(200, FPSTR(TXT_CONTENT_TYPE_JSON), json);
+	return json;
+}
+
+static void webserver_xdata_json()
+{
+	debug_outln_info(F("ws: xdata.json..."));
+	server.send(200, FPSTR(TXT_CONTENT_TYPE_JSON), get_xdata_json());
 }
 
 /*****************************************************************
@@ -160,8 +164,12 @@ static void append(String& line, unsigned long count)
 	}
 }
 
+static void get_remote_data();
+
 static void display_xvalues()
 {
+	get_remote_data();
+
 	#if 0 // TODO: just for display test
  	count_measurements_r = count_sends + 998;
 	last_signal_strength_r = last_signal_strength;
@@ -239,4 +247,54 @@ static void display_xvalues()
 	#endif
 
 	yield();
+}
+
+/*****************************************************************
+ * get remote data via HTTP                                      *
+ *****************************************************************/
+const char* extract_value(const String& json, const char* name)
+{
+	const char* pos = strstr(json.begin(), name);
+	if (pos == nullptr || pos >= json.end())
+	{
+		return nullptr;
+	}
+	pos += strlen(name) + strlen("\",\"value\":\"");
+	if (pos >= json.end())
+	{
+		return nullptr;
+	}
+	return pos;
+}
+
+long extract_long(const String& json, const char* name, long invalid)
+{
+	const char* value = extract_value(json, name);
+	return value != nullptr ? atol(value) : invalid;
+}
+
+float extract_float(const String& json, const char* name, float invalid)
+{
+	const char* value = extract_value(json, name);
+	return value != nullptr ? static_cast<float>(atof(value)) : invalid;
+}
+
+void extract_data(const String& json)
+{
+	count_measurements_r   = extract_long(json, "count_measurements", -1);
+	last_signal_strength_r = extract_long(json, "signal", 0);
+	last_value_BMX280_T_r  = extract_float(json, "BME280_temperature", -128.);
+	last_value_BMX280_P_r  = extract_float(json, "BME280_pressure", -1.);
+	last_value_BME280_H_r  = extract_float(json, "BME280_humidity", -1.);
+	last_value_BMX280x_T_r = extract_float(json, "BME280x_temperature", -128.);
+	last_value_BMX280x_P_r = extract_float(json, "BME280x_pressure", -1.);
+	last_value_BME280x_H_r = extract_float(json, "BME280x_humidity", -1.);
+	last_value_SDS_P2_r    = extract_float(json, "SDS_P2", -1.);
+	last_value_SDS_P1_r    = extract_float(json, "SDS_P1", -1.);
+}
+
+static void get_remote_data()
+{
+	String json = get_xdata_json();
+	extract_data(json);
 }
