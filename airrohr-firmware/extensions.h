@@ -293,8 +293,60 @@ void extract_data(const String& json)
 	last_value_SDS_P1_r    = extract_float(json, "SDS_P1", -1.);
 }
 
+const String remoteHost = "192.168.2.30";
+const String remoteUri = "/xdata.json";
+WiFiClient remoteWiFiClient;
+HTTPClient remoteHttpClient;
+
+static bool open_remote()
+{
+	if (remoteHttpClient.connected())
+	{
+		return true;
+	}
+
+	remoteHttpClient.setTimeout(2 * 1000);
+	remoteHttpClient.setUserAgent(SOFTWARE_VERSION + '/' + esp_chipid + '/' + esp_mac_id);
+	remoteHttpClient.setReuse(true);
+	if (remoteHttpClient.begin(remoteWiFiClient, remoteHost, 80, remoteUri, /*https*/false))
+	{
+		debug_outln_info(F("Connection prepared to "), remoteHost);
+		return true;
+	}
+	else
+	{
+		debug_outln_info(F("Failed connecting to "), remoteHost);
+		return false;
+	}
+}
+
 static void get_remote_data()
 {
-	String json = get_xdata_json();
+	String json;
+
+	#if 0
+	json = get_xdata_json();
+	#else
+	if (open_remote())
+	{
+		const int result = remoteHttpClient.GET();
+		if (result == HTTP_CODE_OK)
+		{
+			json = remoteHttpClient.getString();
+			debug_outln_info(F("GET returned"));
+			debug_outln_info(json);
+			debug_outln_info(F("GET end"));
+		}
+		else
+		{
+			debug_outln_info(F("GET request failed with error: "), String(result));
+			if (result >= HTTP_CODE_BAD_REQUEST)
+			{
+				debug_outln_info(F("Details:"), remoteHttpClient.getString());
+			}
+		}
+	}
+	#endif
+
 	extract_data(json);
 }
