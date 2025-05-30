@@ -1,3 +1,12 @@
+firmware 'xdata' branch: contains my extensions for
+- outdoor node:
+  - with second BME280 sensor at I²C address 0x76
+  - first sensor needs to be switched to I²C address 0x77 by connecting SC0 to 3.3V
+  - all BME sensor data including SDS011 and min/max values provided via http://ip.address/xdata.json
+- display node:
+  - with single BME280 and (LCD) 20x4 characters
+    displaying a single page with values from local and from outdoor node
+
 firmware master branch: [![Build Status](https://github.com/opendata-stuttgart/sensors-software/actions/workflows/airohr-firmware.yml/badge.svg?branch=master)](https://github.com/opendata-stuttgart/sensors-software/actions/workflows/airohr-firmware.yml?query=branch%3Amaster)  
 firmware beta branch: [![Build Status](https://github.com/opendata-stuttgart/sensors-software/actions/workflows/airohr-firmware.yml/badge.svg?branch=beta)](https://github.com/opendata-stuttgart/sensors-software/actions/workflows/airohr-firmware.yml?query=branch%3Abeta)
 

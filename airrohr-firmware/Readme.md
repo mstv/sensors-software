@@ -1,5 +1,15 @@
 # airRohr Sensor Firmware for SPS30, SDS011, DHT22, BMP180, BMP/E 280 and many more
 
+## firmware 'xdata' branch
+contains my extensions for
+- outdoor node:
+  - with second BME280 sensor at I²C address 0x76
+  - first sensor needs to be switched to I²C address 0x77 by connecting SC0 to 3.3V
+  - all BME sensor data including SDS011 and min/max values provided via http://ip.address/xdata.json
+- display node:
+  - with single BME280 and (LCD) 20x4 characters
+    displaying a single page with values from local and from outdoor node
+
 ## Features:
 * many environmental and air quality sensors can be used concurrently
 * Integration in Sensor.Community (formerly Luftdaten.Info)
