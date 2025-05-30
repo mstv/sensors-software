@@ -6113,13 +6113,6 @@ void loop(void)
 		}
 	}
 
-	if ((msSince(last_display_millis) > DISPLAY_UPDATE_INTERVAL_MS) &&
-		(cfg::has_display || cfg::has_sh1106 || lcd_1602 || lcd_2004))
-	{
-		display_xvalues();
-		last_display_millis = act_milli;
-	}
-
 	server.handleClient();
 	yield();
 
@@ -6305,6 +6298,13 @@ void loop(void)
 		sum_send_time = 0;
 		starttime = millis(); // store the start time
 		count_sends++;
+	}
+
+	if ((msSince(last_display_millis) > DISPLAY_UPDATE_INTERVAL_MS) &&
+		(cfg::has_display || cfg::has_sh1106 || lcd_1602 || lcd_2004))
+	{
+		display_xvalues();
+		last_display_millis = act_milli;
 	}
 
 #if defined(ESP8266)
