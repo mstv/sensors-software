@@ -120,6 +120,7 @@ String SOFTWARE_VERSION(SOFTWARE_VERSION_STR);
 #include "defines.h"
 #include "ext_def.h"
 #include "html-content.h"
+#include "./minmax.h"
 
 /******************************************************************
  * The variables inside the cfg namespace are persistent          *
@@ -448,9 +449,9 @@ int last_sendData_returncode;
 
 float last_value_BMP_T = -128.0;
 float last_value_BMP_P = -1.0;
-float last_value_BMX280_T = -128.0;
-float last_value_BMX280_P = -1.0;
-float last_value_BME280_H = -1.0;
+TemperatureValue  last_value_BMX280_T{"BME280_temperature"};
+FloatValue        last_value_BMX280_P{"BME280_pressure"};
+HumidityValue     last_value_BME280_H{"BME280_humidity"};
 float last_value_DHT_T = -128.0;
 float last_value_DHT_H = -1.0;
 float last_value_DS18B20_T = -1.0;
@@ -582,8 +583,8 @@ bool sps30_init_failed = false;
 
 float last_value_PPD_P1 = -1.0;
 float last_value_PPD_P2 = -1.0;
-float last_value_SDS_P1 = -1.0;
-float last_value_SDS_P2 = -1.0;
+FloatValue last_value_SDS_P1{"SDS_P1"};
+FloatValue last_value_SDS_P2{"SDS_P2"};
 float last_value_PMS_P0 = -1.0;
 float last_value_PMS_P1 = -1.0;
 float last_value_PMS_P2 = -1.0;
@@ -6302,6 +6303,8 @@ void loop(void)
 		starttime = millis(); // store the start time
 		count_sends++;
 	}
+
+	MinMaxBase::update_last_values();
 
 	if ((msSince(last_display_millis) > DISPLAY_UPDATE_INTERVAL_MS) &&
 		(cfg::has_display || cfg::has_sh1106 || lcd_1602 || lcd_2004))

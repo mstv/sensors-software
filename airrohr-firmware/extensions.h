@@ -9,10 +9,9 @@ static String dew_point_string(const float temperature, const float humidity)
 // second sensor
 BMX280 bmx280x;
 bool bmx280x_init_failed = false;
-float last_value_BMX280x_T = -128.0;
-float last_value_BMX280x_P = -1.0;
-float last_value_BME280x_H = -1.0;
-
+TemperatureValue  last_value_BMX280x_T{"BME280x_temperature"};
+FloatValue        last_value_BMX280x_P{"BME280x_pressure"};
+HumidityValue     last_value_BME280x_H{"BME280x_humidity"};
 // values from remote sensor (outside, inside)
 unsigned long count_measurements_r = 0;
 int last_signal_strength_r = 0;
@@ -76,41 +75,35 @@ static void fetchSensorBMX280x()
 	}
 }
 
-const String JSON_SENSOR_DATA_VALUES_TAG = "\"sensordatavalues\":";
-const String JSON_INSERT_XDATA_BEFORE_ENTRY = "{\"value_type\":\"samples\"";
-
 /*****************************************************************
  * Webserver xdata.json                                          *
  *****************************************************************/
 static String get_xdata_json()
 {
-	RESERVE_STRING(json, XLARGE_STR);
-
+	RESERVE_STRING(json, XXLARGE_STR);
+	json = String(FPSTR(data_first_part));
 	{
 		long age_ms = msSince(starttime);
-		if (!count_sends)
+		if (count_sends == 0)
 		{
-			json = String(FPSTR(data_first_part)) + F("]}");
 			age_ms -= cfg::sending_intervall_ms;
 		}
-		else
-		{
-			json = last_data_string;
-		}
-		String age = String(F("\n\"age\":\"")) + String((age_ms + 500) / 1000) + F("\", ");
-		json.replace(JSON_SENSOR_DATA_VALUES_TAG, age + JSON_SENSOR_DATA_VALUES_TAG);
+		add_Value2Json(json, F("age"), String((age_ms + 500) / 1000));
 	}
-
-	{
-		RESERVE_STRING(xdata, LARGE_STR);
-		add_Value2Json(xdata, F("BME280_dew_point"), dew_point_string(last_value_BMX280_T, last_value_BME280_H));
-		add_Value2Json(xdata, F("BME280x_temperature"), FPSTR(DBG_TXT_TEMPERATURE), last_value_BMX280x_T);
-		add_Value2Json(xdata, F("BME280x_pressure"), FPSTR(DBG_TXT_PRESSURE), last_value_BMX280x_P);
-		add_Value2Json(xdata, F("BME280x_humidity"), FPSTR(DBG_TXT_HUMIDITY), last_value_BME280x_H);
-		add_Value2Json(xdata, F("BME280x_dew_point"), dew_point_string(last_value_BMX280x_T, last_value_BME280x_H));
-		add_Value2Json(xdata, F("count_measurements"), String(count_sends));
-		json.replace(JSON_INSERT_XDATA_BEFORE_ENTRY, xdata + JSON_INSERT_XDATA_BEFORE_ENTRY);
-	}
+	last_value_BMX280_T.append_to(json);
+	last_value_BMX280_P.append_to(json);
+	last_value_BME280_H.append_to(json);
+	add_Value2Json(json, F("BME280_dew_point"), dew_point_string(last_value_BMX280_T, last_value_BME280_H));
+	last_value_BMX280x_T.append_to(json);
+	last_value_BMX280x_P.append_to(json);
+	last_value_BME280x_H.append_to(json);
+	add_Value2Json(json, F("BME280x_dew_point"), dew_point_string(last_value_BMX280x_T, last_value_BME280x_H));
+	last_value_SDS_P1.append_to(json);
+	last_value_SDS_P2.append_to(json);
+	add_Value2Json(json, F("count_measurements"), String(count_sends));
+	add_Value2Json(json, F("interval"), String(cfg::sending_intervall_ms));
+	add_Value2Json(json, F("signal"), String(last_signal_strength));
+	json = json.substring(0, json.length() - 1) + F("]}");
 
 	json.replace(F("[{"), F("[\n{"));
 	json.replace(F("},"), F("},\n"));

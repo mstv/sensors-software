@@ -47,6 +47,7 @@ constexpr unsigned SMALL_STR = 64-1;
 constexpr unsigned MED_STR = 256-1;
 constexpr unsigned LARGE_STR = 512-1;
 constexpr unsigned XLARGE_STR = 1024-1;
+constexpr unsigned XXLARGE_STR = 2048-1;
 
 #define RESERVE_STRING(name, size) String name((const char*)nullptr); name.reserve(size)
 
