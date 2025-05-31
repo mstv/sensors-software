@@ -15,6 +15,7 @@ TemperatureValue  last_value_BMX280x_T{"BME280x_temperature"};
 FloatValue        last_value_BMX280x_P{"BME280x_pressure"};
 HumidityValue     last_value_BME280x_H{"BME280x_humidity"};
 // values from remote sensor (outside, inside)
+time_t next_update_r = 0;
 unsigned long count_measurements_r = 0;
 int last_signal_strength_r = 0;
 float last_value_BMX280_T_r = -128.0;
@@ -274,7 +275,7 @@ float extract_float(const String& json, const char* name, float invalid)
 	return value != nullptr ? static_cast<float>(atof(value)) : invalid;
 }
 
-void extract_data(const String& json)
+void extract_data(const String& json, const time_t now)
 {
 	count_measurements_r   = extract_long(json, "count_measurements", -1);
 	last_signal_strength_r = extract_long(json, "signal", 0);
@@ -286,6 +287,21 @@ void extract_data(const String& json)
 	last_value_BME280x_H_r = extract_float(json, "BME280x_humidity", -1.);
 	last_value_SDS_P2_r    = extract_float(json, "SDS_P2", -1.);
 	last_value_SDS_P1_r    = extract_float(json, "SDS_P1", -1.);
+
+	const long age_s = extract_long(json, "age", 0);
+	const long interval_ms = extract_long(json, "interval", -1);
+	if (age_s < 0)
+	{
+		next_update_r = now - age_s + 1;
+	}
+	else if (interval_ms > 0)
+	{
+		next_update_r = now - age_s + interval_ms / 1000 + 1;
+	}
+	else
+	{
+		next_update_r = 0;
+	}
 }
 
 const String remoteUri = "/xdata.json";
@@ -318,6 +334,12 @@ static bool open_remote()
 
 static void get_remote_data()
 {
+	const time_t now = time(nullptr);
+	if (now < next_update_r)
+	{
+		return;
+	}
+
 	String json;
 
 	#if CFG_FAKE_REMOTE_DATA
@@ -342,9 +364,10 @@ static void get_remote_data()
 			{
 				debug_outln_info(F("Details:"), remoteHttpClient.getString());
 			}
+			return;
 		}
 	}
 	#endif
 
-	extract_data(json);
+	extract_data(json, now);
 }
