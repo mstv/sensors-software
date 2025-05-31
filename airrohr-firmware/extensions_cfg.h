@@ -1,0 +1,5 @@
+const String remoteHost = "192.168.2.30";
+#define CFG_DEBUG_OUT_DISPLAY 0
+#define CFG_DEBUG_OUT_REMOTE_DATA 0
+#define CFG_DEBUG_REMOTE_CONNECTION 0
+#define CFG_FAKE_REMOTE_DATA 0

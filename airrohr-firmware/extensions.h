@@ -1,3 +1,5 @@
+#include "extensions_cfg.h"
+
 static float dew_point(const float temperature, const float humidity);
 
 static String dew_point_string(const float temperature, const float humidity)
@@ -232,7 +234,7 @@ static void display_xvalues()
 		lcd_2004->print(line3);
 	}
 
-	#if 0 // output to serial, too
+	#if CFG_DEBUG_OUT_DISPLAY // output to serial, too
 	debug_outln_info(line0);
 	debug_outln_info(line1);
 	debug_outln_info(line2);
@@ -286,7 +288,6 @@ void extract_data(const String& json)
 	last_value_SDS_P1_r    = extract_float(json, "SDS_P1", -1.);
 }
 
-const String remoteHost = "192.168.2.30";
 const String remoteUri = "/xdata.json";
 WiFiClient remoteWiFiClient;
 HTTPClient remoteHttpClient;
@@ -303,7 +304,9 @@ static bool open_remote()
 	remoteHttpClient.setReuse(true);
 	if (remoteHttpClient.begin(remoteWiFiClient, remoteHost, 80, remoteUri, /*https*/false))
 	{
+		#if CFG_DEBUG_REMOTE_CONNECTION
 		debug_outln_info(F("Connection prepared to "), remoteHost);
+		#endif
 		return true;
 	}
 	else
@@ -317,7 +320,7 @@ static void get_remote_data()
 {
 	String json;
 
-	#if 0
+	#if CFG_FAKE_REMOTE_DATA
 	json = get_xdata_json();
 	#else
 	if (open_remote())
@@ -326,9 +329,11 @@ static void get_remote_data()
 		if (result == HTTP_CODE_OK)
 		{
 			json = remoteHttpClient.getString();
+			#if CFG_DEBUG_OUT_REMOTE_DATA
 			debug_outln_info(F("GET returned"));
 			debug_outln_info(json);
 			debug_outln_info(F("GET end"));
+			#endif
 		}
 		else
 		{
