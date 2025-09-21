@@ -5836,7 +5836,7 @@ static unsigned long sendDataToOptionalApis(const String &data)
 	{
 		debug_outln_info(FPSTR(DBG_TXT_SENDING_TO), F("custom influx db: "));
 		RESERVE_STRING(data_4_influxdb, LARGE_STR);
-		create_influxdb_string_from_data(data_4_influxdb, data);
+		create_influxdb_string_from_data(data_4_influxdb, get_xdata_json());
 		sum_send_time += sendData(LoggerInflux, data_4_influxdb, 0, cfg::host_influx, cfg::url_influx);
 	}
 

@@ -5,7 +5,7 @@ static float dew_point(const float temperature, const float humidity);
 static String dew_point_string(const float temperature, const float humidity)
 {
 	const float dew_point_temp = dew_point(temperature, humidity);
-	return isnan(dew_point_temp) ? "-" : String(dew_point_temp, 1);
+	return isnan(dew_point_temp) ? "-128.0" : String(dew_point_temp, 1);
 }
 
 // second sensor
