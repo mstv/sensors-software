@@ -16,7 +16,7 @@ FloatValue        last_value_BMX280x_P{"BME280x_pressure"};
 HumidityValue     last_value_BME280x_H{"BME280x_humidity"};
 // values from remote sensor (outside, inside)
 time_t next_update_r = 0;
-unsigned long count_measurements_r = 0;
+long count_measurements_r = -1;
 int last_signal_strength_r = 0;
 float last_value_BMX280_T_r = -128.0;
 float last_value_BMX280_P_r = -1.0;
@@ -137,11 +137,18 @@ static void append(String& line, float value, float minValue, unsigned int minWi
 	append(line, text, minWidth);
 }
 
-static void append(String& line, unsigned long count)
+static void append(String& line, long count)
 {
-	if (count < 1000)
+	if (count == -1)
+	{
+		line += F("    ? ");
+		return;
+	}
+	else if (count < 1000)
 	{
 		append(line, String(count), 5);
+		line += ' ';
+		return;
 	}
 	else if (count < 1000 * 1000)
 	{
@@ -158,6 +165,7 @@ static void append(String& line, unsigned long count)
 		append(line, String((count + 500 * 1000 * 1000) / (1000 * 1000 * 1000)), 4);
 		line += 'G';
 	}
+	line += (count & 1) != 0 ? '.' : ' ';
 }
 
 static void get_remote_data();
@@ -219,7 +227,6 @@ static void display_xvalues()
 	append(line3, last_value_SDS_P1_r, -1, 2, 0);
 	line3 += 'u';
 	append(line3, count_measurements_r);
-	line3 += ' ';
 	append(line3, String(calcWiFiSignalQuality(last_signal_strength_r)), 2);
 	line3 += '%';
 
